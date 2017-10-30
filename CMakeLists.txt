@@ -3,5 +3,5 @@ project(dynamic_systems_dsl_translator)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(SOURCE_FILES main.cpp)
+set(SOURCE_FILES main.cpp SyntaxAnalyzer.cpp SyntaxAnalyzer.h)
 add_executable(dynamic_systems_dsl_translator ${SOURCE_FILES})
