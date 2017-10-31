@@ -6,20 +6,21 @@
 #define DYNAMIC_SYSTEMS_DSL_TRANSLATOR_SYNTAXANALYZER_H
 
 #include <iostream>
+#include <utility>
+#include "CheckingResult.h"
 
 using namespace std;
 
 class SyntaxAnalyzer {
+private:
+    enum State { START, ERROR, FINAL, A, B, C, D, E, F, G };
+
 public:
-    struct CheckingResult {
-        bool result;
-        int position;
-        string message;
-    };
+    static CheckingResult isSign(const string &text, int startingPosition);
 
-    CheckingResult isSign(const string &text, int startingPosition);
+    static CheckingResult isAssignment(const string &text, int startingPosition);
 
-    CheckingResult isIdentifier(const string &text, int startingPosition);
+    static CheckingResult isIdentifier(const string &text, int startingPosition);
 
 
 };
