@@ -5,23 +5,13 @@
 #include "SyntaxAnalyzer.h"
 
 CheckingResult SyntaxAnalyzer::isSign(const string &text, int startingPosition) {
-    CheckingResult result;
-    result = CheckingResult(text == "+" || text == "-");
-    if (!result.isSuccessful()) {
-        result.message = "Expected sign (+ or -)";
-        result.position = startingPosition;
-    }
-    return result;
+    if (text == "+" || text == "-") return CheckingResult(true);
+    return CheckingResult(false, startingPosition, "Expected sign (+ or -)");
 }
 
-SyntaxAnalyzer::CheckingResult SyntaxAnalyzer::isAssignment(const string &text, int startingPosition) {
-    CheckingResult result;
-    result.successful = text == "=";
-    if (!result.successful) {
-        result.message = "Expected assignment operator \"=\"";
-        result.position = startingPosition;
-    }
-    return result;
+CheckingResult SyntaxAnalyzer::isAssignment(const string &text, int startingPosition) {
+    if (text == "=") return CheckingResult(true);
+    return CheckingResult(false, startingPosition, "Expected assignment operator \"=\"");
 }
 
 /*
