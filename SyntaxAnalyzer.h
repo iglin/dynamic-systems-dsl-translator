@@ -22,6 +22,8 @@ public:
 
     static CheckingResult isIdentifier(const string &text, int startingPosition);
 
+    static CheckingResult isNumericConst(const string &text, int startingPosition);
+
 
 };
 
