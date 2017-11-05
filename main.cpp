@@ -26,12 +26,14 @@ int readFile(const string &fileName) {
 }
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
     CheckingResult res;
-    res = SyntaxAnalyzer::isNumericConst("+282.25123", 0);
+    SyntaxAnalyzer syntaxAnalyzer;
+    res = syntaxAnalyzer.isIdentifier("dx", 0);
     if (res.isSuccessful()) cout << "yes";
     else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;
 
-    readFile("../example.ds");
+    double x = -5*+-2;
+    cout <<x ;
+   // readFile("../example.ds");
     return 0;
 }
