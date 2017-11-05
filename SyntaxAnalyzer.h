@@ -24,7 +24,7 @@ public:
 
     static CheckingResult isNumericConst(const string &text, int startingPosition);
 
-
+    static CheckingResult isMathFunction(const string &text, int startingPosition);
 };
 
 

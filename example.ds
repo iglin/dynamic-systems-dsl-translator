@@ -1,0 +1,29 @@
+#
+#  This is an example program written in dynamic systems dsl
+#  ...
+
+#
+
+x0 = 5 # x(0) = 5
+y0 = 2
+dx= 2 * sin(x) + t^2
+dy =2* atan(y) + t^2
+dz = 2 * z + e -  sin(z) + t^2
+z0 = 5523.98
+
+t0 = 0
+T = 500.23
+
+h = 0.5
+
+# time to solve!
+
+solutionX = eulers(dx, h)
+solutionY = eulers(dy, h)
+solutionZ = rungekutta(dz, h)
+
+print(solutionX)
+println("X solution: " + solutionX)
+
+exportcsv("res.csv")
+graph(solutionX, "resX.JSON")

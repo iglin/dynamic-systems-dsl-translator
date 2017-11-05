@@ -56,7 +56,7 @@ CheckingResult SyntaxAnalyzer::isNumericConst(const string &text, int startingPo
     for (unsigned int i = 0; i < text.length(); i++) {
         switch (state) {
             case START:
-                if (isSign(to_string(text.at(i)), startingPosition).isSuccessful()) state = A;
+                if (isSign(string(1, text.at(i)), startingPosition).isSuccessful()) state = A;
                 else if (text.at(i) == '.') state = B;
                 else if (isdigit(text.at(i))) state = D;
                 else return CheckingResult(false, startingPosition,
@@ -83,8 +83,11 @@ CheckingResult SyntaxAnalyzer::isNumericConst(const string &text, int startingPo
                 else return CheckingResult(false, startingPosition + i, "Invalid symbol in numeric constant");
                 break;
         }
-        if (state == C || state == D) return CheckingResult(true);
-        return CheckingResult(false, startingPosition, "Invalid numeric constant");
     }
-    return CheckingResult();
+    if (state == C || state == D) return CheckingResult(true);
+    return CheckingResult(false, startingPosition, "Invalid numeric constant");
+}
+
+CheckingResult SyntaxAnalyzer::isMathFunction(const string &text, int startingPosition) {
+    return CheckingResult(false, startingPosition, "Not a math function");
 }
