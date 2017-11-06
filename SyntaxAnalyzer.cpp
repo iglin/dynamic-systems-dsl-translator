@@ -161,28 +161,31 @@ CheckingResult SyntaxAnalyzer::isMathConst(const string &text, int startingPosit
 /*
  * START - 'MATH_CONST NUM_VS_SIGN EX_DOUBLE' -> FINAL
  *       |
+ *       - 'WS' -> START(r)
+ *       |
  *       - 'MATH_FUNC' -> A -> 'WS' -> A(r)
  *                          |
- *                          - '(' -> B - 'WS' -> B(r)
- *                                     |
- *                                     - 'EXPR OPERAND' -> C - 'WS' -> C(r)
- *                                                           |
- *                                                           - ')' -> D -> $ -> FINAL
+ *                          - '(' -> B - 'EXPR' -> C - ')' -> D - 'WS' -> D(r)
+ *                                                              |
+ *                                                              - $ -> FINAL
  */
 CheckingResult SyntaxAnalyzer::isOperand(const string &text, int startingPosition) {
-    if (isMathConst(text, startingPosition).isSuccessful()
-        || isNumericConst(text, startingPosition).isSuccessful()
-        || isExistingVariable(text, startingPosition, DOUBLE).isSuccessful()) return CheckingResult(true);
+    if (isMathConst(StringUtils::trim_copy(text), startingPosition).isSuccessful()
+        || isNumericConst(StringUtils::trim_copy(text), startingPosition).isSuccessful()
+        || isExistingVariable(StringUtils::trim_copy(text), startingPosition, DOUBLE).isSuccessful()) return CheckingResult(true);
 
     State state = START;
     unsigned int i = 0;
     string substring;
+    while (i < text.length() && text.at(i) == ' ') i++;
+
+    int position = startingPosition + i;
     while (i < text.length() && isalnum(text.at(i))) {
         substring += string(1, text.at(i));
         i++;
     }
-    if (!isMathFunction(substring, startingPosition).isSuccessful())
-        return CheckingResult(false, startingPosition, "Invalid operand");
+    if (!isMathFunction(substring, position).isSuccessful())
+        return CheckingResult(false, position, "Invalid operand");
     else state = A;
     while (i < text.length()) {
         switch (state) {
@@ -192,20 +195,27 @@ CheckingResult SyntaxAnalyzer::isOperand(const string &text, int startingPositio
                 else return CheckingResult(false, startingPosition + i, "Expected \"(\" after the math function name");
                 break;
             case B: {
-                if (text.at(i) == ' ') break;
                 substring = "";
                 int newPosition = startingPosition + i;
-                while (i < text.length() && text.at(i) != ')') {
+                int openedParentheses = 0;
+                while (i < text.length()) {
+                    if (text.at(i) == '(') openedParentheses++;
+                    else if (text.at(i) == ')') {
+                        if (openedParentheses > 0) {
+                            openedParentheses--;
+                        } else {
+                            i--;
+                            break;
+                        }
+                    }
                     substring += string(1, text.at(i));
                     i++;
                 }
-                // TODO: isExpression() is enough?
-                if (i == text.length() || !isOperand(StringUtils::rtrim_copy(substring), newPosition).isSuccessful()
-                    && !isExpression(substring, newPosition).isSuccessful())
+
+                if (!isExpression(substring, newPosition).isSuccessful())
                     return CheckingResult(false, newPosition, "Invalid math function argument");
 
-                if (text.at(i) == ' ') state = C;
-                else if (text.at(i) == ')') state = D;
+                state = C;
                 break;
             }
             case C:
@@ -213,28 +223,23 @@ CheckingResult SyntaxAnalyzer::isOperand(const string &text, int startingPositio
                 if (text.at(i) == ')') state = D;
                 break;
             case D:
+                if (text.at(i) == ' ') break;
                 return CheckingResult(false, startingPosition + i, "Unexpected symbol after the math function call");
         }
         i++;
     }
     if (state == D) return CheckingResult(true);
-    else return CheckingResult(false, startingPosition, "Invalid operand");
+    return CheckingResult(false, startingPosition, "Invalid operand");
 }
 
 /*
- * START - '(' -> A -> 'WS' -> A(r)
- *       |          |
- *       |          - 'EXPR' -> D - 'WS' -> D(r)
- *       |                        |
- *       |                        - ')' -> E - '$' -> FINAL
+ * START - '(' -> A - 'EXPR' -> C - ')' -> D - '$' -> FINAL
  *       |                                   |
- *       - 'OPERAND' -> E                    - 'WS' -> F -> 'WS' -> F(r)
- *       |                                   |           |
- *       - '+ -' -> C - 'WS' -> C(r)         |           - 'MATH_OP' -> B
- *                    |                      |
- *                    - '(' -> A             - 'MATH_OP' -> B - 'WS' -> B(r)
- *                    |                                       |
- *                    - 'OPERAND' -> E                        - 'OPERAND' -> E
+ *       - 'WS -> START(r)                   - 'WS' -> D(r)
+ *       |                                   |
+ *       - 'OPERAND' -> D                    - 'MATH_OP' -> B - 'WS' -> B(r)
+ *       |                                                    |
+ *       - '+ -' -> B                                         - 'OPERAND' -> D
  *                                                            |
  *                                                            - '(' -> A
  */
@@ -243,55 +248,83 @@ CheckingResult SyntaxAnalyzer::isExpression(const string &text, int startingPosi
     for (unsigned int i = 0; i < text.length(); i++) {
         switch (state) {
             case START:
+                if (text.at(i) == ' ') continue;
                 if (text.at(i) == '(') state = A;
-                else if (text.at(i) == '+' || text.at(i) == '-') state = C;
+                else if (text.at(i) == '+' || text.at(i) == '-') state = B;
                 else {
                     string substring;
-                    while (i < text.length() && text.at(i) != ' '
-                           && isMathOperation(string(1, text.at(1)), i).isSuccessful()) {
+                    int openedParentheses = 0;
+                    while (i < text.length()) {
+                        if (text.at(i) == '(') openedParentheses++;
+                        else if (text.at(i) == ')') openedParentheses--;
+                        else if (openedParentheses == 0 && isMathOperation(string(1, text.at(i)), i).isSuccessful()) {
+                            i--;
+                            break;
+                        }
                         substring += string(1, text.at(i));
                         i++;
                     }
                     if (!isOperand(substring, startingPosition).isSuccessful())
                         return CheckingResult(false, startingPosition, "Invalid expression");
-                    state = E;
-                    i--;
-                }
-                break;
-            case A:
-                if (text.at(i) == ' ') continue;
-                else {
-                    int newPosition = startingPosition + i;
-                    string substring;
-                    while (i < text.length() && text.at(i) != ' ' && text.at(i) != ')') {
-                        substring += string(1, text.at(i));
-                        i++;
-                    }
-                    if (!isExpression(substring, newPosition).isSuccessful())
-                        return CheckingResult(false, newPosition, "Invalid expression");
                     state = D;
-                    i--;
                 }
                 break;
+            case A: {
+                int newPosition = startingPosition + i;
+                string substring;
+                int openedParentheses = 0;
+                while (i < text.length()) {
+                    if (text.at(i) == '(')
+                        openedParentheses++;
+                    else if (text.at(i) == ')')
+                        if (openedParentheses > 0) {
+                            openedParentheses--;
+                        } else {
+                            i--;
+                            break;
+                        }
+                    substring += string(1, text.at(i));
+                    i++;
+                }
+                if (!isExpression(substring, newPosition).isSuccessful())
+                    return CheckingResult(false, newPosition, "Invalid expression");
+                state = C;
+                break;
+            }
             case B:
                 if (text.at(i) == ' ') continue;
                 if (text.at(i) == '(') state = A;
                 else {
                     string substring;
-                    int newPosition = startingPosition + i;
-                    while (i < text.length() && text.at(i) != ' '
-                           && isMathOperation(string(1, text.at(1)), newPosition).isSuccessful()) {
+                    int openedParentheses = 0;
+                    while (i < text.length()) {
+                        if (text.at(i) == '(') openedParentheses++;
+                        else if (text.at(i) == ')') openedParentheses--;
+                        else if (openedParentheses == 0 && isMathOperation(string(1, text.at(i)), startingPosition + i).isSuccessful()) {
+                            i--;
+                            break;
+                        }
                         substring += string(1, text.at(i));
                         i++;
                     }
-                    if (!isOperand(substring, newPosition).isSuccessful())
-                        return CheckingResult(false, newPosition, "Invalid expression");
-                    state = E;
-                    i--;
+                    if (!isOperand(substring, startingPosition + i).isSuccessful())
+                        return CheckingResult(false, startingPosition + i, "Error in expression");
+                    state = D;
                 }
+                break;
+            case C:
+                if (text.at(i) == ')') state = D;
+                else return CheckingResult(false, i, "Expected \")\" in expression");
+                break;
+            case D:
+                if (text.at(i) == ' ') continue;
+                if (isMathOperation(string(1, text.at(i)), startingPosition + i).isSuccessful()) state = B;
+                else return CheckingResult(false, startingPosition + i, "Error in expression");
                 break;
         }
     }
+    if (state == D) return CheckingResult(true);
+    return CheckingResult(false, startingPosition, "Invalid expression");
 }
 
 /*

@@ -29,7 +29,7 @@ int readFile(const string &fileName) {
 int main() {
     CheckingResult res;
     SyntaxAnalyzer syntaxAnalyzer;
-    res = syntaxAnalyzer.isOperand("sin    (  +.55  ", 0);
+    res = syntaxAnalyzer.isOperand("  sin(+33.44 -cos(22*5 (- 2) ) ", 0);
     if (res.isSuccessful()) cout << "yes";
     else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;
 
