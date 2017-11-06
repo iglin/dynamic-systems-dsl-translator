@@ -3,6 +3,7 @@
 //
 
 #include "SyntaxAnalyzer.h"
+#include "StringUtils.h"
 #include <algorithm>
 
 SyntaxAnalyzer::SyntaxAnalyzer() {}
@@ -25,8 +26,6 @@ CheckingResult SyntaxAnalyzer::isAssignment(const string &text, int startingPosi
 CheckingResult SyntaxAnalyzer::isIdentifier(const string &text, int startingPosition) {
     if (find(RESERVED_IDENTIFIERS.begin(), RESERVED_IDENTIFIERS.end(), text) != RESERVED_IDENTIFIERS.end())
         return CheckingResult(false, startingPosition, "Identifier name is reserved");
-    if (find(identifiers.begin(), identifiers.end(), text) != identifiers.end())
-        return CheckingResult(false, startingPosition, "Identifier already exists");
     State state = State::START;
     for (unsigned int i = 0; i < text.length(); i++) {
         if (state == START) {
@@ -38,6 +37,13 @@ CheckingResult SyntaxAnalyzer::isIdentifier(const string &text, int startingPosi
         }
     }
     return CheckingResult(true);
+}
+
+CheckingResult SyntaxAnalyzer::isExistingVariable(const string &text, int startingPosition, Type type) {
+    for (const auto& id : identifiers) {
+        if (id.first == text && id.second == type) return CheckingResult(true);
+    }
+    return CheckingResult(false, startingPosition, "Identifier doesn't exist");
 }
 
 /*
@@ -55,7 +61,7 @@ CheckingResult SyntaxAnalyzer::isIdentifier(const string &text, int startingPosi
  *                     |
  *                     - $ -> FINAL
  */
-CheckingResult SyntaxAnalyzer::isAssignableNumericConst(const string &text, int startingPosition) {
+CheckingResult SyntaxAnalyzer::isNumericConstWithSign(const string &text, int startingPosition) {
     State state = START;
     for (unsigned int i = 0; i < text.length(); i++) {
         switch (state) {
@@ -153,6 +159,75 @@ CheckingResult SyntaxAnalyzer::isMathConst(const string &text, int startingPosit
 }
 
 /*
+ * START - 'MATH_CONST NUM_VS_SIGN EX_DOUBLE' -> FINAL
+ *       |
+ *       - 'MATH_FUNC' -> A -> 'WS' -> A(r)
+ *                          |
+ *                          - '(' -> B - 'WS' -> B(r)
+ *                                     |
+ *                                     - 'EXPR OPERAND' -> C - 'WS' -> C(r)
+ *                                                           |
+ *                                                           - ')' -> D -> $ -> FINAL
+ */
+CheckingResult SyntaxAnalyzer::isOperand(const string &text, int startingPosition) {
+    if (isMathConst(text, startingPosition).isSuccessful()
+        || isNumericConstWithSign(text, startingPosition).isSuccessful()
+        || isExistingVariable(text, startingPosition, DOUBLE).isSuccessful()) return CheckingResult(true);
+
+    State state = START;
+    unsigned int i = 0;
+    string substring;
+    while (i < text.length() && isalnum(text.at(i))) {
+        substring += string(1, text.at(i));
+        i++;
+    }
+    if (!isMathFunction(substring, startingPosition).isSuccessful())
+        return CheckingResult(false, startingPosition, "Invalid operand");
+    else state = A;
+    while (i < text.length()) {
+        switch (state) {
+            case A:
+                if (text.at(i) == ' ') break;
+                if (text.at(i) == '(') state = B;
+                else return CheckingResult(false, startingPosition + i, "Expected \"(\" after the math function name");
+                break;
+            case B: {
+                if (text.at(i) == ' ') break;
+                substring = "";
+                int newPosition = startingPosition + i;
+                while (i < text.length() && text.at(i) != ')') {
+                    substring += string(1, text.at(i));
+                    i++;
+                }
+                if (i == text.length() || !isOperand(StringUtils::rtrim_copy(substring), newPosition).isSuccessful()
+                    && !isExpression(substring, newPosition).isSuccessful())
+                    return CheckingResult(false, newPosition, "Invalid math function argument");
+
+                if (text.at(i) == ' ') state = C;
+                else if (text.at(i) == ')') state = D;
+                break;
+            }
+            case C:
+                if (text.at(i) == ' ') break;
+                if (text.at(i) == ')') state = D;
+                break;
+            case D:
+                return CheckingResult(false, startingPosition + i, "Unexpected symbol after the math function call");
+        }
+        i++;
+    }
+    if (state == D) return CheckingResult(true);
+    else return CheckingResult(false, startingPosition, "Invalid operand");
+}
+
+/*
+ * START - 'NUM NUM_'
+ */
+CheckingResult SyntaxAnalyzer::isExpression(const string &text, int startingPosition) {
+    return CheckingResult();
+}
+
+/*
  * START - 'ID RES_ID' -> A - 'WS' -> A(r)
  *       |                  |
  *       |                  - 'ASGN'
@@ -163,4 +238,5 @@ CheckingResult SyntaxAnalyzer::validateLine(const string &text, int startingPosi
     // TODO: Trim
     return CheckingResult();
 }
+
 

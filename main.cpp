@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 #include "SyntaxAnalyzer.h"
+#include "StringUtils.h"
 
 using namespace std;
 
@@ -28,12 +29,14 @@ int readFile(const string &fileName) {
 int main() {
     CheckingResult res;
     SyntaxAnalyzer syntaxAnalyzer;
-    res = syntaxAnalyzer.isIdentifier("dx", 0);
+    res = syntaxAnalyzer.isOperand("sin    (  +.55  ", 0);
     if (res.isSuccessful()) cout << "yes";
     else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;
 
-    double x = -5*+-2;
-    cout <<x ;
+    string str = "   wat   ";
+    cout << str << endl;
+    cout << StringUtils::trim_copy(str) << endl;
+    cout << str << endl;
    // readFile("../example.ds");
     return 0;
 }

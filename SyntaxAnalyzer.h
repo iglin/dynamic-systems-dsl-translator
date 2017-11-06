@@ -8,6 +8,7 @@
 #include <iostream>
 #include <utility>
 #include <list>
+#include <map>
 #include "CheckingResult.h"
 
 using namespace std;
@@ -25,10 +26,12 @@ private:
     const string ASSIGNMENT_OPERATOR = "=";
     const string COMMENT_CHAR = "#";
 
-    list<string> identifiers;
+    //list<string> identifiers;
+    map<string, Type> identifiers;
     list<string> lines;
 
 public:
+
     SyntaxAnalyzer();
 
     CheckingResult isSign(const string &text, int startingPosition);
@@ -37,7 +40,9 @@ public:
 
     CheckingResult isIdentifier(const string &text, int startingPosition);
 
-    CheckingResult isAssignableNumericConst(const string &text, int startingPosition);
+    CheckingResult isExistingVariable(const string &text, int startingPosition, Type type);
+
+    CheckingResult isNumericConstWithSign(const string &text, int startingPosition);
 
     CheckingResult isNumericConst(const string &text, int startingPosition);
 
@@ -48,6 +53,10 @@ public:
     CheckingResult isMathOperation(const string &text, int startingPosition);
 
     CheckingResult isMathConst(const string &text, int startingPosition);
+
+    CheckingResult isOperand(const string &text, int startingPosition);
+
+    CheckingResult isExpression(const string &text, int startingPosition);
 
     CheckingResult validateLine(const string &text, int startingPosition);
 };
