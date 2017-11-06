@@ -6,7 +6,7 @@
 #include "StringUtils.h"
 #include <algorithm>
 
-SyntaxAnalyzer::SyntaxAnalyzer() {}
+SyntaxAnalyzer::SyntaxAnalyzer() = default;
 
 CheckingResult SyntaxAnalyzer::isSign(const string &text, int startingPosition) {
     if (text == "+" || text == "-") return CheckingResult(true);
@@ -171,7 +171,7 @@ CheckingResult SyntaxAnalyzer::isMathConst(const string &text, int startingPosit
  */
 CheckingResult SyntaxAnalyzer::isOperand(const string &text, int startingPosition) {
     if (isMathConst(text, startingPosition).isSuccessful()
-        || isNumericConstWithSign(text, startingPosition).isSuccessful()
+        || isNumericConst(text, startingPosition).isSuccessful()
         || isExistingVariable(text, startingPosition, DOUBLE).isSuccessful()) return CheckingResult(true);
 
     State state = START;
@@ -199,6 +199,7 @@ CheckingResult SyntaxAnalyzer::isOperand(const string &text, int startingPositio
                     substring += string(1, text.at(i));
                     i++;
                 }
+                // TODO: isExpression() is enough?
                 if (i == text.length() || !isOperand(StringUtils::rtrim_copy(substring), newPosition).isSuccessful()
                     && !isExpression(substring, newPosition).isSuccessful())
                     return CheckingResult(false, newPosition, "Invalid math function argument");
@@ -221,10 +222,76 @@ CheckingResult SyntaxAnalyzer::isOperand(const string &text, int startingPositio
 }
 
 /*
- * START - 'NUM NUM_'
+ * START - '(' -> A -> 'WS' -> A(r)
+ *       |          |
+ *       |          - 'EXPR' -> D - 'WS' -> D(r)
+ *       |                        |
+ *       |                        - ')' -> E - '$' -> FINAL
+ *       |                                   |
+ *       - 'OPERAND' -> E                    - 'WS' -> F -> 'WS' -> F(r)
+ *       |                                   |           |
+ *       - '+ -' -> C - 'WS' -> C(r)         |           - 'MATH_OP' -> B
+ *                    |                      |
+ *                    - '(' -> A             - 'MATH_OP' -> B - 'WS' -> B(r)
+ *                    |                                       |
+ *                    - 'OPERAND' -> E                        - 'OPERAND' -> E
+ *                                                            |
+ *                                                            - '(' -> A
  */
 CheckingResult SyntaxAnalyzer::isExpression(const string &text, int startingPosition) {
-    return CheckingResult();
+    State state = START;
+    for (unsigned int i = 0; i < text.length(); i++) {
+        switch (state) {
+            case START:
+                if (text.at(i) == '(') state = A;
+                else if (text.at(i) == '+' || text.at(i) == '-') state = C;
+                else {
+                    string substring;
+                    while (i < text.length() && text.at(i) != ' '
+                           && isMathOperation(string(1, text.at(1)), i).isSuccessful()) {
+                        substring += string(1, text.at(i));
+                        i++;
+                    }
+                    if (!isOperand(substring, startingPosition).isSuccessful())
+                        return CheckingResult(false, startingPosition, "Invalid expression");
+                    state = E;
+                    i--;
+                }
+                break;
+            case A:
+                if (text.at(i) == ' ') continue;
+                else {
+                    int newPosition = startingPosition + i;
+                    string substring;
+                    while (i < text.length() && text.at(i) != ' ' && text.at(i) != ')') {
+                        substring += string(1, text.at(i));
+                        i++;
+                    }
+                    if (!isExpression(substring, newPosition).isSuccessful())
+                        return CheckingResult(false, newPosition, "Invalid expression");
+                    state = D;
+                    i--;
+                }
+                break;
+            case B:
+                if (text.at(i) == ' ') continue;
+                if (text.at(i) == '(') state = A;
+                else {
+                    string substring;
+                    int newPosition = startingPosition + i;
+                    while (i < text.length() && text.at(i) != ' '
+                           && isMathOperation(string(1, text.at(1)), newPosition).isSuccessful()) {
+                        substring += string(1, text.at(i));
+                        i++;
+                    }
+                    if (!isOperand(substring, newPosition).isSuccessful())
+                        return CheckingResult(false, newPosition, "Invalid expression");
+                    state = E;
+                    i--;
+                }
+                break;
+        }
+    }
 }
 
 /*

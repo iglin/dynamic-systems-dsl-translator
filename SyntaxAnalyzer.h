@@ -31,7 +31,6 @@ private:
     list<string> lines;
 
 public:
-
     SyntaxAnalyzer();
 
     CheckingResult isSign(const string &text, int startingPosition);
