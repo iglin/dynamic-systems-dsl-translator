@@ -23,14 +23,16 @@ private:
     const list<string> METHODS = { "eulers", "rungekutta", "print", "println" };
     const list<string> MATH_OPERATIONS = { "+", "-", "*", "/", "^" };
     const list<string> MATH_CONSTS = { "e" };
-    const string ASSIGNMENT_OPERATOR = "=";
-    const string COMMENT_CHAR = "#";
 
     //list<string> identifiers;
     map<string, Type> identifiers;
+    list<string> declaredIdentifiers;
     list<string> lines;
 
 public:
+    const char ASSIGNMENT_OPERATOR = '=';
+    const char COMMENT_CHAR = '#';
+
     SyntaxAnalyzer();
 
     CheckingResult isSign(const string &text, int startingPosition);
@@ -57,7 +59,7 @@ public:
 
     CheckingResult isExpression(const string &text, int startingPosition);
 
-    CheckingResult validateLine(const string &text, int startingPosition);
+    CheckingResult translateLine(const string &line);
 };
 
 

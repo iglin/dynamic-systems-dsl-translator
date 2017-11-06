@@ -27,6 +27,10 @@ public:
 
 // trim from both ends (copying)
     static std::string trim_copy(std::string s);
+
+    static std::string replace(std::string subject, const std::string& search, const std::string& replace);
+
+    static std::string replaceFirst(std::string subject, const std::string& search, const std::string& replace);
 };
 
 #endif //DYNAMIC_SYSTEMS_DSL_TRANSLATOR_STRINGUTILS_H

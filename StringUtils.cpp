@@ -41,3 +41,22 @@ std::string StringUtils::trim_copy(std::string s) {
     trim(s);
     return s;
 }
+
+std::string StringUtils::replace(std::string subject, const std::string& search, const std::string& replace) {
+    size_t pos = 0;
+    while((pos = subject.find(search, pos)) != std::string::npos) {
+        subject.replace(pos, search.length(), replace);
+        pos += replace.length();
+    }
+    return subject;
+}
+
+std::string StringUtils::replaceFirst(std::string subject, const std::string& search, const std::string& replace) {
+    size_t pos = 0;
+    while((pos = subject.find(search, pos)) != std::string::npos) {
+        subject.replace(pos, search.length(), replace);
+        pos += replace.length();
+        break;
+    }
+    return subject;
+}

@@ -328,14 +328,79 @@ CheckingResult SyntaxAnalyzer::isExpression(const string &text, int startingPosi
 }
 
 /*
- * START - 'ID RES_ID' -> A - 'WS' -> A(r)
- *       |                  |
- *       |                  - 'ASGN'
+ * START - 'WS' -> START(r)
  *       |
- *       - 'METHOD' -> B - 'WS' -> B(r)
+ *       - '#' -> copy comment and finish
+ *       |
+ *       - 'DERIV' -> A
  */
-CheckingResult SyntaxAnalyzer::validateLine(const string &text, int startingPosition) {
-    // TODO: Trim
+CheckingResult SyntaxAnalyzer::translateLine(const string &line) {
+    string comment;
+    string translatedLine;
+    unsigned int i = 0;
+    while (line.at(i) == ' ') i++;
+    if (line.at(i) == SyntaxAnalyzer::COMMENT_CHAR) {
+        comment = StringUtils::replaceFirst(line, "#", "//");
+        lines.push_back(comment);
+        return CheckingResult(true);
+    }
+
+    int commentStartIdx = -1;
+    for (int j = i; j < line.length(); j++)
+        if (line.at(i) == COMMENT_CHAR) commentStartIdx = j;
+    if (commentStartIdx != -1) {
+        comment = line.substr(commentStartIdx + 1, line.length());
+        comment = "//" + comment;
+        translatedLine = line.substr(0, commentStartIdx);
+    } else {
+        translatedLine = line;
+    }
+
+    string substring;
+    bool assignment = false;
+    for (i; i < line.length(); i++) {
+        if ((assignment = line.at(i) == SyntaxAnalyzer::ASSIGNMENT_OPERATOR) || line.at(i) == '(') break;
+        substring += string(1, line.at(i));
+    }
+
+    if (assignment) {
+        StringUtils::trim(substring);
+        if (substring == "dx" || substring == "dy" || substring == "dz") {
+            identifiers.insert(pair<string, Type>(substring, DERIVATIVE));
+            string outputString = "#define " + substring + " (" + translatedLine.substr(i + 1, translatedLine.length())
+                                  + ") " + comment;
+            lines.push_back(outputString);
+            return CheckingResult(true);
+        }
+
+        if (isIdentifier(substring, 0).isSuccessful()) {
+            translatedLine = translatedLine.substr(i + 1, translatedLine.length());
+
+            if (isExpression(translatedLine, i + 1).isSuccessful()) {
+                if (!isExistingVariable(substring, 0, DOUBLE).isSuccessful()) {
+                    identifiers.insert(pair<string, Type>(substring, DOUBLE));
+                    translatedLine = "double " + substring + " = " + translatedLine + comment;
+                } else {
+                    translatedLine = substring + " = " + translatedLine + comment;
+                }
+                lines.push_back(translatedLine);
+                return CheckingResult(true);
+            } else {
+                if (translatedLine.find("eulers") != std::string::npos) {
+                    if (translatedLine.find("dx") != std::string::npos) {
+                        if (!isExistingVariable(substring, 0, TABLE).isSuccessful()) {
+                            identifiers.insert(pair<string, Type>(substring, TABLE));
+                            translatedLine = "double " + substring + " = " + translatedLine + comment;
+                        } else {
+                            translatedLine = substring + " = " + translatedLine + comment;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+
+    }
     return CheckingResult();
 }
 
