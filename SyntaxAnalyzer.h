@@ -10,13 +10,16 @@
 #include <list>
 #include <map>
 #include "CheckingResult.h"
+#include "Method.h"
 
 using namespace std;
 
 class SyntaxAnalyzer {
+public:
+    enum Type { DOUBLE, TABLE, STRING, DERIVATIVE, VOID };
+
 private:
     enum State { START, ERROR, FINAL, A, B, C, D, E, F, G };
-    enum Type { DOUBLE, TABLE, STRING, DERIVATIVE };
 
     const list<string> RESERVED_IDENTIFIERS = { "dx", "dy", "dz", "x", "y", "z", "x0", "y0", "z0", "t", "t0", "T" };
     const list<string> MATH_FUNCTIONS = { "sin", "cos", "tan", "asin", "acos", "atan", "log", "log10", "sqrt", "cbrt" };
@@ -24,10 +27,12 @@ private:
     const list<string> MATH_OPERATIONS = { "+", "-", "*", "/", "^" };
     const list<string> MATH_CONSTS = { "e" };
 
-    //list<string> identifiers;
+    list<Method> methods;
+
     map<string, Type> identifiers;
     list<string> declaredIdentifiers;
-    list<string> lines;
+    list<string> initLines;
+    list<string> mainLines;
 
 public:
     const char ASSIGNMENT_OPERATOR = '=';

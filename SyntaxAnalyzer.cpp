@@ -6,7 +6,12 @@
 #include "StringUtils.h"
 #include <algorithm>
 
-SyntaxAnalyzer::SyntaxAnalyzer() = default;
+SyntaxAnalyzer::SyntaxAnalyzer() = default {
+    methods.push_back(Method("eulers", list({ DERIVATIVE, DOUBLE }), TABLE));
+    methods.push_back(Method("rungekutta", list({ DERIVATIVE, DOUBLE }), TABLE));
+    methods.push_back(Method("print", list({ STRING }), VOID));
+    methods.push_back(Method("println", list({ STRING }), VOID));
+}
 
 CheckingResult SyntaxAnalyzer::isSign(const string &text, int startingPosition) {
     if (text == "+" || text == "-") return CheckingResult(true);
@@ -26,6 +31,8 @@ CheckingResult SyntaxAnalyzer::isAssignment(const string &text, int startingPosi
 CheckingResult SyntaxAnalyzer::isIdentifier(const string &text, int startingPosition) {
     if (find(RESERVED_IDENTIFIERS.begin(), RESERVED_IDENTIFIERS.end(), text) != RESERVED_IDENTIFIERS.end())
         return CheckingResult(false, startingPosition, "Identifier name is reserved");
+    if (find(MATH_CONSTS.begin(), MATH_CONSTS.end(), text) != MATH_CONSTS.end())
+        return CheckingResult(false, startingPosition, "Identifier name is reserved for math constant");
     State state = State::START;
     for (unsigned int i = 0; i < text.length(); i++) {
         if (state == START) {
@@ -327,82 +334,28 @@ CheckingResult SyntaxAnalyzer::isExpression(const string &text, int startingPosi
     return CheckingResult(false, startingPosition, "Invalid expression");
 }
 
-/*
- * START - 'WS' -> START(r)
- *       |
- *       - '#' -> $
- *       |
- *       - 'DERIV' -> A
- */
-CheckingResult SyntaxAnalyzer::translateLine(const string &line) {
-    string comment;
-    string translatedLine;
-    unsigned int i = 0;
-    while (line.at(i) == ' ') i++;
-    if (line.at(i) == SyntaxAnalyzer::COMMENT_CHAR) {
-        comment = StringUtils::replaceFirst(line, "#", "//");
-        lines.push_back(comment);
-        return CheckingResult(true);
-    }
+CheckingResult SyntaxAnalyzer::isFirstDerivativeX(const string &text, int startingPosition) {
+    const string key = "x";
+    identifiers.insert(pair<string, Type>(key, DOUBLE));
+    auto result = isExpression(text, startingPosition);
+    identifiers.erase(key);
+    return result;
+}
 
-    int commentStartIdx = -1;
-    for (int j = i; j < line.length(); j++)
-        if (line.at(i) == COMMENT_CHAR) commentStartIdx = j;
-    if (commentStartIdx != -1) {
-        comment = line.substr(commentStartIdx + 1, line.length() - (commentStartIdx + 1));
-        comment = "//" + comment;
-        translatedLine = line.substr(0, commentStartIdx);
-    } else {
-        translatedLine = line;
-    }
+CheckingResult SyntaxAnalyzer::isFirstDerivativeY(const string &text, int startingPosition) {
+    const string key = "y";
+    identifiers.insert(pair<string, Type>(key, DOUBLE));
+    auto result = isExpression(text, startingPosition);
+    identifiers.erase(key);
+    return result;
+}
 
-    string substring;
-    bool assignment = false;
-    for (i; i < line.length(); i++) {
-        if ((assignment = line.at(i) == SyntaxAnalyzer::ASSIGNMENT_OPERATOR) || line.at(i) == '(') break;
-        substring += string(1, line.at(i));
-    }
-
-    if (assignment) {
-        StringUtils::trim(substring);
-        if (substring == "dx" || substring == "dy" || substring == "dz") {
-            identifiers.insert(pair<string, Type>(substring, DERIVATIVE));
-            string outputString = "#define " + substring + " ("
-                                  + translatedLine.substr(i + 1, translatedLine.length() - (i + 1))
-                                  + ") " + comment;
-            lines.push_back(outputString);
-            return CheckingResult(true);
-        }
-
-        if (isIdentifier(substring, 0).isSuccessful()) {
-            translatedLine = translatedLine.substr(i + 1, translatedLine.length() - (i + 1));
-
-            if (isExpression(translatedLine, i + 1).isSuccessful()) {
-                if (!isExistingVariable(substring, 0, DOUBLE).isSuccessful()) {
-                    identifiers.insert(pair<string, Type>(substring, DOUBLE));
-                    translatedLine = "double " + substring + " = " + translatedLine + comment;
-                } else {
-                    translatedLine = substring + " = " + translatedLine + comment;
-                }
-                lines.push_back(translatedLine);
-                return CheckingResult(true);
-            } else {
-                if (translatedLine.find("eulers") != std::string::npos) {
-                    if (translatedLine.find("dx") != std::string::npos) {
-                        if (!isExistingVariable(substring, 0, TABLE).isSuccessful()) {
-                            identifiers.insert(pair<string, Type>(substring, TABLE));
-                            translatedLine = "double " + substring + " = " + translatedLine + comment;
-                        } else {
-                            translatedLine = substring + " = " + translatedLine + comment;
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-
-    }
-    return CheckingResult();
+CheckingResult SyntaxAnalyzer::isFirstDerivativeZ(const string &text, int startingPosition) {
+    const string key = "z";
+    identifiers.insert(pair<string, Type>(key, DOUBLE));
+    auto result = isExpression(text, startingPosition);
+    identifiers.erase(key);
+    return result;
 }
 
 string SyntaxAnalyzer::translatePow(const string &text) {
@@ -432,5 +385,86 @@ string SyntaxAnalyzer::translatePow(const string &text) {
     }
     return result;
 }
+
+/*
+ * START - 'WS' -> START(r)
+ *       |
+ *       - '#' -> $
+ *       |
+ *       - 'DERIV' -> A -> 'WS' -> A(r)
+ *                      |
+ *                      - '=' -> B
+ */
+CheckingResult SyntaxAnalyzer::translateLine(const string &line) {
+    string comment;
+    string translatedLine;
+    unsigned int i = 0;
+    while (line.at(i) == ' ') i++;
+    if (line.at(i) == SyntaxAnalyzer::COMMENT_CHAR) {
+        comment = StringUtils::replaceFirst(line, "#", "//");
+        mainLines.push_back(comment);
+        return CheckingResult(true);
+    }
+
+    int commentStartIdx = -1;
+    for (int j = i; j < line.length(); j++)
+        if (line.at(i) == COMMENT_CHAR) commentStartIdx = j;
+    if (commentStartIdx != -1) {
+        comment = line.substr(commentStartIdx + 1, line.length() - (commentStartIdx + 1));
+        comment = "//" + comment;
+        translatedLine = line.substr(0, commentStartIdx);
+    } else {
+        translatedLine = line;
+    }
+
+    string substring;
+    bool assignment = false;
+    for (i; i < line.length(); i++) {
+        if ((assignment = line.at(i) == SyntaxAnalyzer::ASSIGNMENT_OPERATOR) || line.at(i) == '(') break;
+        substring += string(1, line.at(i));
+    }
+
+    if (assignment) {
+        StringUtils::trim(substring);
+        if (substring == "dx" || substring == "dy" || substring == "dz") {
+            identifiers.insert(pair<string, Type>(substring, DERIVATIVE));
+            string outputString = "#define " + substring + " ("
+                                  + translatedLine.substr(i + 1, translatedLine.length() - (i + 1))
+                                  + ") " + comment;
+            mainLines.push_back(outputString);
+            return CheckingResult(true);
+        }
+
+        if (isIdentifier(substring, 0).isSuccessful()) {
+            translatedLine = translatedLine.substr(i + 1, translatedLine.length() - (i + 1));
+
+            if (isExpression(translatedLine, i + 1).isSuccessful()) {
+                if (!isExistingVariable(substring, 0, DOUBLE).isSuccessful()) {
+                    identifiers.insert(pair<string, Type>(substring, DOUBLE));
+                    translatedLine = "double " + substring + " = " + translatedLine + comment;
+                } else {
+                    translatedLine = substring + " = " + translatedLine + comment;
+                }
+                mainLines.push_back(translatedLine);
+                return CheckingResult(true);
+            } else {
+                if (translatedLine.find("eulers") != std::string::npos) {
+                    if (translatedLine.find("dx") != std::string::npos) {
+                        if (!isExistingVariable(substring, 0, TABLE).isSuccessful()) {
+                            identifiers.insert(pair<string, Type>(substring, TABLE));
+                            translatedLine = "double " + substring + " = " + translatedLine + comment;
+                        } else {
+                            translatedLine = substring + " = " + translatedLine + comment;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+
+    }
+    return CheckingResult();
+}
+
 
 
