@@ -34,6 +34,7 @@ int main() {
     else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;
 
     string str = "   5 ^ 3   ";
+    cout << StringUtils::indexOf("   5 ^ 3   ", "!") << endl;
 
     cout << str << endl;
     str = syntaxAnalyzer.translatePow(str);

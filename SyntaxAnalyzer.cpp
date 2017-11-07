@@ -408,8 +408,8 @@ CheckingResult SyntaxAnalyzer::translateLine(const string &line) {
 // TODO: Check all substr calls in project
 string SyntaxAnalyzer::translatePow(const string &text) {
     string result = text;
-
-    while (int index = StringUtils::indexOf(result, "^") != -1) {
+    int index;
+    while ((index = StringUtils::indexOf(result, "^")) != -1) {
         int openedParentheses = 0;
         string leftOperand, rightOperand;
         int i, j;
@@ -424,6 +424,7 @@ string SyntaxAnalyzer::translatePow(const string &text) {
             leftOperand = string(1, result.at(i)) + leftOperand;
         }
 
+        cout << "left op: " << leftOperand << endl;
         for (j = index + 1; j < result.length(); j++) {
             if (openedParentheses == 0 && isMathOperation(string(1, result.at(j)), j).isSuccessful()) {
                // j--;
@@ -434,7 +435,8 @@ string SyntaxAnalyzer::translatePow(const string &text) {
             rightOperand += string(1, result.at(j));
         }
 
-        result = result.substr(0, i) + " pow(" + leftOperand + ", " + rightOperand + ") " + result.substr(j, result.length());
+        cout << "right op: " << rightOperand << endl;
+        result = result.substr(0, i) + " pow(" + leftOperand + ", " + rightOperand + ") " + result.substr(j, result.length() - j);
     }
 
     return result;
