@@ -59,6 +59,14 @@ public:
 
     CheckingResult isExpression(const string &text, int startingPosition);
 
+    CheckingResult isFirstDerivativeX(const string &text, int startingPosition);
+
+    CheckingResult isFirstDerivativeY(const string &text, int startingPosition);
+
+    CheckingResult isFirstDerivativeZ(const string &text, int startingPosition);
+
+    string translatePow(const string &text);
+
     CheckingResult translateLine(const string &line);
 };
 

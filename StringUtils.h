@@ -31,6 +31,8 @@ public:
     static std::string replace(std::string subject, const std::string& search, const std::string& replace);
 
     static std::string replaceFirst(std::string subject, const std::string& search, const std::string& replace);
+
+    static int indexOf(const std::string &text, const std::string &target);
 };
 
 #endif //DYNAMIC_SYSTEMS_DSL_TRANSLATOR_STRINGUTILS_H

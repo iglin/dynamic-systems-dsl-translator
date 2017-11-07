@@ -330,7 +330,7 @@ CheckingResult SyntaxAnalyzer::isExpression(const string &text, int startingPosi
 /*
  * START - 'WS' -> START(r)
  *       |
- *       - '#' -> copy comment and finish
+ *       - '#' -> $
  *       |
  *       - 'DERIV' -> A
  */
@@ -402,6 +402,42 @@ CheckingResult SyntaxAnalyzer::translateLine(const string &line) {
 
     }
     return CheckingResult();
+}
+
+
+// TODO: Check all substr calls in project
+string SyntaxAnalyzer::translatePow(const string &text) {
+    string result = text;
+
+    while (int index = StringUtils::indexOf(result, "^") != -1) {
+        int openedParentheses = 0;
+        string leftOperand, rightOperand;
+        int i, j;
+
+        for (i = index - 1; i >= 0; i--) {
+            if (openedParentheses == 0 && isMathOperation(string(1, result.at(i)), i).isSuccessful()) {
+                i++;
+                break;
+            }
+            if (result.at(i) == '(') openedParentheses++;
+            else if (result.at(i) == ')') openedParentheses--;
+            leftOperand = string(1, result.at(i)) + leftOperand;
+        }
+
+        for (j = index + 1; j < result.length(); j++) {
+            if (openedParentheses == 0 && isMathOperation(string(1, result.at(j)), j).isSuccessful()) {
+               // j--;
+                break;
+            }
+            if (result.at(j) == '(') openedParentheses++;
+            else if (result.at(j) == ')') openedParentheses--;
+            rightOperand += string(1, result.at(j));
+        }
+
+        result = result.substr(0, i) + " pow(" + leftOperand + ", " + rightOperand + ") " + result.substr(j, result.length());
+    }
+
+    return result;
 }
 
 

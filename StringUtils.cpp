@@ -60,3 +60,11 @@ std::string StringUtils::replaceFirst(std::string subject, const std::string& se
     }
     return subject;
 }
+
+int StringUtils::indexOf(const std::string &text, const std::string &target) {
+    int index = -1;
+    std::size_t found = text.find(target);
+    if (found!=std::string::npos)
+        index = static_cast<int>(found);
+    return index;
+}
