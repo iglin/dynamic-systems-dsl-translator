@@ -33,8 +33,7 @@ int main() {
     if (res.isSuccessful()) cout << "yes" << endl;
     else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;
 
-    string str = "   5 ^ 3   ";
-    cout << StringUtils::indexOf("   5 ^ 3   ", "!") << endl;
+    string str = "   2* 5 ^ 3 /  77 ^ (88 * (2 + 3)^4)";
 
     cout << str << endl;
     str = syntaxAnalyzer.translatePow(str);

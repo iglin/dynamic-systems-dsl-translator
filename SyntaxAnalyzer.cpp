@@ -349,7 +349,7 @@ CheckingResult SyntaxAnalyzer::translateLine(const string &line) {
     for (int j = i; j < line.length(); j++)
         if (line.at(i) == COMMENT_CHAR) commentStartIdx = j;
     if (commentStartIdx != -1) {
-        comment = line.substr(commentStartIdx + 1, line.length());
+        comment = line.substr(commentStartIdx + 1, line.length() - (commentStartIdx + 1));
         comment = "//" + comment;
         translatedLine = line.substr(0, commentStartIdx);
     } else {
@@ -367,14 +367,15 @@ CheckingResult SyntaxAnalyzer::translateLine(const string &line) {
         StringUtils::trim(substring);
         if (substring == "dx" || substring == "dy" || substring == "dz") {
             identifiers.insert(pair<string, Type>(substring, DERIVATIVE));
-            string outputString = "#define " + substring + " (" + translatedLine.substr(i + 1, translatedLine.length())
+            string outputString = "#define " + substring + " ("
+                                  + translatedLine.substr(i + 1, translatedLine.length() - (i + 1))
                                   + ") " + comment;
             lines.push_back(outputString);
             return CheckingResult(true);
         }
 
         if (isIdentifier(substring, 0).isSuccessful()) {
-            translatedLine = translatedLine.substr(i + 1, translatedLine.length());
+            translatedLine = translatedLine.substr(i + 1, translatedLine.length() - (i + 1));
 
             if (isExpression(translatedLine, i + 1).isSuccessful()) {
                 if (!isExistingVariable(substring, 0, DOUBLE).isSuccessful()) {
@@ -404,8 +405,6 @@ CheckingResult SyntaxAnalyzer::translateLine(const string &line) {
     return CheckingResult();
 }
 
-
-// TODO: Check all substr calls in project
 string SyntaxAnalyzer::translatePow(const string &text) {
     string result = text;
     int index;
@@ -415,30 +414,22 @@ string SyntaxAnalyzer::translatePow(const string &text) {
         int i, j;
 
         for (i = index - 1; i >= 0; i--) {
-            if (openedParentheses == 0 && isMathOperation(string(1, result.at(i)), i).isSuccessful()) {
-                i++;
-                break;
-            }
+            if (openedParentheses == 0 && isMathOperation(string(1, result.at(i)), i).isSuccessful()) break;
             if (result.at(i) == '(') openedParentheses++;
             else if (result.at(i) == ')') openedParentheses--;
             leftOperand = string(1, result.at(i)) + leftOperand;
         }
+        i++;
 
-        cout << "left op: " << leftOperand << endl;
         for (j = index + 1; j < result.length(); j++) {
-            if (openedParentheses == 0 && isMathOperation(string(1, result.at(j)), j).isSuccessful()) {
-               // j--;
-                break;
-            }
+            if (openedParentheses == 0 && isMathOperation(string(1, result.at(j)), j).isSuccessful()) break;
             if (result.at(j) == '(') openedParentheses++;
             else if (result.at(j) == ')') openedParentheses--;
             rightOperand += string(1, result.at(j));
         }
 
-        cout << "right op: " << rightOperand << endl;
         result = result.substr(0, i) + " pow(" + leftOperand + ", " + rightOperand + ") " + result.substr(j, result.length() - j);
     }
-
     return result;
 }
 
