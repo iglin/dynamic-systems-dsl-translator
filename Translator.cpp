@@ -4,15 +4,16 @@
 
 #include <fstream>
 #include "Translator.h"
+#include "StringUtils.h"
 
 void Translator::translateToCpp(const string &sourceFileName) {
-    SyntaxAnalyzer syntaxAnalyzer;
+    auto syntaxAnalyzer = new SyntaxAnalyzer();
     ifstream file(sourceFileName);
     if (file.is_open()) {
         std::string line;
         while (std::getline(file, line)) {
-            cout << line << endl;
-            syntaxAnalyzer.translateLine(line);
+            //cout << line << endl;
+            translateLine(line, *syntaxAnalyzer);
         }
         file.close();
     } else {
@@ -20,4 +21,106 @@ void Translator::translateToCpp(const string &sourceFileName) {
         errorMessage = "Could not read source file " + sourceFileName;
         throw runtime_error(errorMessage);
     }
+}
+
+string Translator::translatePows(const string &text, SyntaxAnalyzer &syntaxAnalyzer) {
+    string result = text;
+    int index;
+    while ((index = StringUtils::indexOf(result, "^")) != -1) {
+        int openedParentheses = 0;
+        string leftOperand, rightOperand;
+        int i, j;
+
+        for (i = index - 1; i >= 0; i--) {
+            if (openedParentheses == 0 && syntaxAnalyzer.isMathOperation(string(1, result.at(i)), i).isSuccessful()) break;
+            if (result.at(i) == '(') openedParentheses++;
+            else if (result.at(i) == ')') openedParentheses--;
+            leftOperand = string(1, result.at(i)) + leftOperand;
+        }
+        i++;
+
+        for (j = index + 1; j < result.length(); j++) {
+            if (openedParentheses == 0 && syntaxAnalyzer.isMathOperation(string(1, result.at(j)), j).isSuccessful()) break;
+            if (result.at(j) == '(') openedParentheses++;
+            else if (result.at(j) == ')') openedParentheses--;
+            rightOperand += string(1, result.at(j));
+        }
+
+        result = result.substr(0, i) + " pow(" + leftOperand + ", " + rightOperand + ") " + result.substr(j, result.length() - j);
+    }
+    return result;
+}
+
+CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syntaxAnalyzer) {
+    if (StringUtils::trim_copy(line).empty()) return CheckingResult(true);
+
+    string comment;
+    string lineWithoutComment;
+    unsigned int i = 0;
+    while (line.at(i) == ' ') i++;
+    if (line.at(i) == SyntaxAnalyzer::COMMENT_CHAR) {
+        comment = StringUtils::replaceFirst(line, "#", "//");
+        mainLines.push_back(comment);
+        return CheckingResult(true);
+    }
+
+    int commentStartIdx = StringUtils::indexOf(line, "#");
+    if (commentStartIdx != -1) {
+        comment = line.substr(commentStartIdx + 1, line.length() - (commentStartIdx + 1));
+        comment = "//" + comment;
+        lineWithoutComment = line.substr(0, commentStartIdx);
+    } else {
+        lineWithoutComment = line;
+    }
+
+    cout << "Comment: " << comment << endl;
+    cout << "Line: " << lineWithoutComment << endl;
+    return CheckingResult();
+    string substring;
+    bool assignment = false;
+    for (i; i < line.length(); i++) {
+        if ((assignment = line.at(i) == SyntaxAnalyzer::ASSIGNMENT_OPERATOR) || line.at(i) == '(') break;
+        substring += string(1, line.at(i));
+    }
+
+   /* if (assignment) {
+        StringUtils::trim(substring);
+        if (substring == "dx" || substring == "dy" || substring == "dz") {
+            syntaxAnalyzer.getIdentifiers().insert(*(new pair<string, SyntaxAnalyzer::Type>(substring, SyntaxAnalyzer::DERIVATIVE)));
+            string outputString = "#define " + substring + " ("
+                                  + lineWithoutComment.substr(i + 1, lineWithoutComment.length() - (i + 1))
+                                  + ") " + comment;
+            mainLines.push_back(outputString);
+            return CheckingResult(true);
+        }
+
+        if (isIdentifier(substring, 0).isSuccessful()) {
+            lineWithoutComment = lineWithoutComment.substr(i + 1, lineWithoutComment.length() - (i + 1));
+
+            if (isExpression(lineWithoutComment, i + 1).isSuccessful()) {
+                if (!isExistingVariable(substring, 0, DOUBLE).isSuccessful()) {
+                    identifiers.insert(pair<string, Type>(substring, DOUBLE));
+                    lineWithoutComment = "double " + substring + " = " + lineWithoutComment + comment;
+                } else {
+                    lineWithoutComment = substring + " = " + lineWithoutComment + comment;
+                }
+                mainLines.push_back(lineWithoutComment);
+                return CheckingResult(true);
+            } else {
+                if (lineWithoutComment.find("eulers") != std::string::npos) {
+                    if (lineWithoutComment.find("dx") != std::string::npos) {
+                        if (!isExistingVariable(substring, 0, TABLE).isSuccessful()) {
+                            identifiers.insert(pair<string, Type>(substring, TABLE));
+                            lineWithoutComment = "double " + substring + " = " + lineWithoutComment + comment;
+                        } else {
+                            lineWithoutComment = substring + " = " + lineWithoutComment + comment;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+
+    }*/
+    return CheckingResult();
 }

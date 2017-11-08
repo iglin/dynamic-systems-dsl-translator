@@ -11,8 +11,15 @@
 using namespace std;
 
 class Translator {
+private:
+    list<string> initLines;
+    list<string> mainLines;
 public:
-    static void translateToCpp(const string &sourceFileName);
+    void translateToCpp(const string &sourceFileName);
+
+    string translatePows(const string &text, SyntaxAnalyzer &syntaxAnalyzer);
+
+    CheckingResult translateLine(const string &line, SyntaxAnalyzer &syntaxAnalyzer);
 };
 
 

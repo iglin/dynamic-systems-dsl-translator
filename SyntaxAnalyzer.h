@@ -10,13 +10,22 @@
 #include <list>
 #include <map>
 #include "CheckingResult.h"
-#include "Method.h"
+#include "VariablesContainer.h"
+#include "Type.h"
 
 using namespace std;
 
 class SyntaxAnalyzer {
 public:
-    enum Type { DOUBLE, TABLE, STRING, DERIVATIVE, VOID };
+    struct Method {
+        string name;
+        list<Type> arguments;
+        Type returnType = Type::VOID;
+
+        Method(const string &name, const list<Type> &arguments, Type returnType);
+
+        Method();
+    };
 
 private:
     enum State { START, ERROR, FINAL, A, B, C, D, E, F, G };
@@ -29,14 +38,11 @@ private:
 
     list<Method> methods;
 
-    map<string, Type> identifiers;
-    list<string> declaredIdentifiers;
-    list<string> initLines;
-    list<string> mainLines;
+    VariablesContainer identifiers;
 
 public:
-    const char ASSIGNMENT_OPERATOR = '=';
-    const char COMMENT_CHAR = '#';
+    static const char ASSIGNMENT_OPERATOR = '=';
+    static const char COMMENT_CHAR = '#';
 
     SyntaxAnalyzer();
 
@@ -70,9 +76,6 @@ public:
 
     CheckingResult isFirstDerivativeZ(const string &text, int startingPosition);
 
-    string translatePow(const string &text);
-
-    CheckingResult translateLine(const string &line);
 };
 
 
