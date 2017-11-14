@@ -17,5 +17,10 @@ int main() {
     else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;
 
     Translator().translateToCpp("../example.ds");
+
+    string str = "   waaat ";
+    cout << str << endl;
+    StringUtils::trim(str);
+    cout << str << endl;
     return 0;
 }

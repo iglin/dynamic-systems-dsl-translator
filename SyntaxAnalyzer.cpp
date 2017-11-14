@@ -334,26 +334,43 @@ CheckingResult SyntaxAnalyzer::isExpression(const string &text, int startingPosi
 
 CheckingResult SyntaxAnalyzer::isFirstDerivativeX(const string &text, int startingPosition) {
     const string key = "x";
+    const string t = "t";
     identifiers.addIdentifier(key, DOUBLE);
+    identifiers.addIdentifier(t, DOUBLE);
     auto result = isExpression(text, startingPosition);
     identifiers.removeIdentifier(key);
+    identifiers.removeIdentifier(t);
     return result;
 }
 
 CheckingResult SyntaxAnalyzer::isFirstDerivativeY(const string &text, int startingPosition) {
     const string key = "y";
+    const string t = "t";
     identifiers.addIdentifier(key, DOUBLE);
+    identifiers.addIdentifier(t, DOUBLE);
     auto result = isExpression(text, startingPosition);
     identifiers.removeIdentifier(key);
+    identifiers.removeIdentifier(t);
     return result;
 }
 
 CheckingResult SyntaxAnalyzer::isFirstDerivativeZ(const string &text, int startingPosition) {
     const string key = "z";
+    const string t = "t";
     identifiers.addIdentifier(key, DOUBLE);
+    identifiers.addIdentifier(t, DOUBLE);
     auto result = isExpression(text, startingPosition);
     identifiers.removeIdentifier(key);
+    identifiers.removeIdentifier(t);
     return result;
+}
+
+VariablesContainer &SyntaxAnalyzer::getIdentifiers() const {
+    return identifiers;
+}
+
+void SyntaxAnalyzer::setIdentifiers(const VariablesContainer &identifiers) {
+    SyntaxAnalyzer::identifiers = identifiers;
 }
 
 SyntaxAnalyzer::Method::Method() = default;

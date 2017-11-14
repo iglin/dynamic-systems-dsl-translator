@@ -58,6 +58,7 @@ CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syn
     string lineWithoutComment;
     unsigned int i = 0;
     while (line.at(i) == ' ') i++;
+    int firstNonWhitespaceIdx = i;
     if (line.at(i) == SyntaxAnalyzer::COMMENT_CHAR) {
         comment = StringUtils::replaceFirst(line, "#", "//");
         mainLines.push_back(comment);
@@ -75,52 +76,56 @@ CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syn
 
     cout << "Comment: " << comment << endl;
     cout << "Line: " << lineWithoutComment << endl;
-    return CheckingResult();
+
     string substring;
     bool assignment = false;
-    for (i; i < line.length(); i++) {
-        if ((assignment = line.at(i) == SyntaxAnalyzer::ASSIGNMENT_OPERATOR) || line.at(i) == '(') break;
-        substring += string(1, line.at(i));
+    for (i; i < lineWithoutComment.length(); i++) {
+        if ((assignment = lineWithoutComment.at(i) == SyntaxAnalyzer::ASSIGNMENT_OPERATOR) || lineWithoutComment.at(i) == '(') break;
+        substring += string(1, lineWithoutComment.at(i));
     }
+    string restString = lineWithoutComment.substr(i + 1, lineWithoutComment.length() - (i + 1));
 
-   /* if (assignment) {
-        StringUtils::trim(substring);
-        if (substring == "dx" || substring == "dy" || substring == "dz") {
-            syntaxAnalyzer.getIdentifiers().insert(*(new pair<string, SyntaxAnalyzer::Type>(substring, SyntaxAnalyzer::DERIVATIVE)));
-            string outputString = "#define " + substring + " ("
-                                  + lineWithoutComment.substr(i + 1, lineWithoutComment.length() - (i + 1))
-                                  + ") " + comment;
-            mainLines.push_back(outputString);
+    CheckingResult check;
+    if (assignment) {
+        string trimmedId = StringUtils::trim_copy(substring);
+        if (trimmedId == "dx") {
+            check = syntaxAnalyzer.isFirstDerivativeX(restString, i + 1);
+            if (!check.isSuccessful()) return check;
+
+            syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, DERIVATIVE);
+            string outputString = "#define " + trimmedId + " (" + restString + ") " + comment;
+            initLines.push_back(outputString);
             return CheckingResult(true);
         }
 
-        if (isIdentifier(substring, 0).isSuccessful()) {
-            lineWithoutComment = lineWithoutComment.substr(i + 1, lineWithoutComment.length() - (i + 1));
+        check = syntaxAnalyzer.isIdentifier(trimmedId, firstNonWhitespaceIdx);
+        if (!check.isSuccessful()) return check;
 
-            if (isExpression(lineWithoutComment, i + 1).isSuccessful()) {
-                if (!isExistingVariable(substring, 0, DOUBLE).isSuccessful()) {
-                    identifiers.insert(pair<string, Type>(substring, DOUBLE));
-                    lineWithoutComment = "double " + substring + " = " + lineWithoutComment + comment;
-                } else {
-                    lineWithoutComment = substring + " = " + lineWithoutComment + comment;
-                }
-                mainLines.push_back(lineWithoutComment);
-                return CheckingResult(true);
+        lineWithoutComment = lineWithoutComment.substr(i + 1, lineWithoutComment.length() - (i + 1));
+
+        if (isExpression(lineWithoutComment, i + 1).isSuccessful()) {
+            if (!isExistingVariable(substring, 0, DOUBLE).isSuccessful()) {
+                identifiers.insert(pair<string, Type>(substring, DOUBLE));
+                lineWithoutComment = "double " + substring + " = " + lineWithoutComment + comment;
             } else {
-                if (lineWithoutComment.find("eulers") != std::string::npos) {
-                    if (lineWithoutComment.find("dx") != std::string::npos) {
-                        if (!isExistingVariable(substring, 0, TABLE).isSuccessful()) {
-                            identifiers.insert(pair<string, Type>(substring, TABLE));
-                            lineWithoutComment = "double " + substring + " = " + lineWithoutComment + comment;
-                        } else {
-                            lineWithoutComment = substring + " = " + lineWithoutComment + comment;
-                        }
+                lineWithoutComment = substring + " = " + lineWithoutComment + comment;
+            }
+            mainLines.push_back(lineWithoutComment);
+            return CheckingResult(true);
+        } else {
+            if (lineWithoutComment.find("eulers") != std::string::npos) {
+                if (lineWithoutComment.find("dx") != std::string::npos) {
+                    if (!isExistingVariable(substring, 0, TABLE).isSuccessful()) {
+                        identifiers.insert(pair<string, Type>(substring, TABLE));
+                        lineWithoutComment = "double " + substring + " = " + lineWithoutComment + comment;
+                    } else {
+                        lineWithoutComment = substring + " = " + lineWithoutComment + comment;
                     }
                 }
             }
         }
     } else {
 
-    }*/
+    }
     return CheckingResult();
 }

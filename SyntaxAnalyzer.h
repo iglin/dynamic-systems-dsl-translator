@@ -46,6 +46,10 @@ public:
 
     SyntaxAnalyzer();
 
+    VariablesContainer &getIdentifiers() const;
+
+    void setIdentifiers(const VariablesContainer &identifiers);
+
     CheckingResult isSign(const string &text, int startingPosition);
 
     CheckingResult isAssignment(const string &text, int startingPosition);
