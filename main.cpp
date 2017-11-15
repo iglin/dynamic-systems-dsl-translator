@@ -11,8 +11,8 @@ using namespace std;
 
 int main() {
     CheckingResult res;
-    SyntaxAnalyzer syntaxAnalyzer;
-    res = syntaxAnalyzer.isFirstDerivativeX("  2 * (sin(x) + x^2 + (2 - 4 *x)) ", 0);
+    SyntaxAnalyzer *syntaxAnalyzer = new SyntaxAnalyzer();
+    res = syntaxAnalyzer->isMethodReturningType("rungekutta", 0, TABLE);
     if (res.isSuccessful()) cout << "yes" << endl;
     else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;
 

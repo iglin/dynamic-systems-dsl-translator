@@ -46,7 +46,7 @@ public:
 
     SyntaxAnalyzer();
 
-    VariablesContainer &getIdentifiers() const;
+    VariablesContainer &getIdentifiers();
 
     void setIdentifiers(const VariablesContainer &identifiers);
 
@@ -66,6 +66,8 @@ public:
 
     CheckingResult isMethodName(const string &text, int startingPosition);
 
+    CheckingResult isMethodReturningType(const string &text, int startingPosition, Type returnType);
+
     CheckingResult isMathOperation(const string &text, int startingPosition);
 
     CheckingResult isMathConst(const string &text, int startingPosition);
@@ -79,6 +81,8 @@ public:
     CheckingResult isFirstDerivativeY(const string &text, int startingPosition);
 
     CheckingResult isFirstDerivativeZ(const string &text, int startingPosition);
+
+    CheckingResult isNumIntegrationCall(const string &text, int startingPosition);
 
 };
 

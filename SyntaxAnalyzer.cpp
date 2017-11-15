@@ -153,6 +153,14 @@ CheckingResult SyntaxAnalyzer::isMethodName(const string &text, int startingPosi
     return CheckingResult(false, startingPosition, "There is no such method");
 }
 
+
+CheckingResult SyntaxAnalyzer::isMethodReturningType(const string &text, int startingPosition, Type returnType) {
+    for (const auto &method : methods) {
+        if (method.name == text && method.returnType == returnType) return CheckingResult(true);
+    }
+    return CheckingResult(false, startingPosition, "There is no such method with specified return type");
+}
+
 CheckingResult SyntaxAnalyzer::isMathOperation(const string &text, int startingPosition) {
     if (find(MATH_OPERATIONS.begin(), MATH_OPERATIONS.end(), text) != MATH_OPERATIONS.end()) return CheckingResult(true);
     return CheckingResult(false, startingPosition, "There is no such math operation");
@@ -365,7 +373,40 @@ CheckingResult SyntaxAnalyzer::isFirstDerivativeZ(const string &text, int starti
     return result;
 }
 
-VariablesContainer &SyntaxAnalyzer::getIdentifiers() const {
+/*
+ * START - 'eulers rungekutta' -> A - 'WS' -> A(r)
+ *       |                          |
+ *       - 'WS' -> START(r)         - '(' -> B - 'dx dy dz' -> C - ',' -> D - 'EXPR' -> E - ')' -> F - 'WS' -> F(r)
+ *                                             |                 |                                   |
+ *                                             - 'WS' -> B(r)    - 'WS' -> C(r)                      - '$' -> FINAL
+ */
+CheckingResult SyntaxAnalyzer::isNumIntegrationCall(const string &text, int startingPosition) {
+    State state = START;
+    for (unsigned int i = 0; i < text.length(); i++) {
+        switch (state) {
+            case START:
+                if (text.at(i) == ' ') continue;
+                string substring;
+                int position = i;
+                while (i < text.length()) {
+                    if (text.at(i) == ' ') {
+                        if (isMethodReturningType(substring, position, TABLE).isSuccessful()) {
+                            state = A;
+                            continue;
+                        } else {
+                            return CheckingResult(false, position, "There is no such numeric integration method");
+                        }
+                    }
+                    if (i >= text.length()) return CheckingResult(false, 0, "");
+                    i++;
+                }
+                break;
+        }
+    }
+    return CheckingResult();
+}
+
+VariablesContainer &SyntaxAnalyzer::getIdentifiers() {
     return identifiers;
 }
 
