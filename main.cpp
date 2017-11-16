@@ -11,7 +11,7 @@ using namespace std;
 
 int main() {
     CheckingResult res;
-    SyntaxAnalyzer *syntaxAnalyzer = new SyntaxAnalyzer();
+    auto *syntaxAnalyzer = new SyntaxAnalyzer();
     res = syntaxAnalyzer->isMethodReturningType("rungekutta", 0, TABLE);
     if (res.isSuccessful()) cout << "yes" << endl;
     else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;

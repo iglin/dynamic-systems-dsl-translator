@@ -74,9 +74,6 @@ CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syn
         lineWithoutComment = line;
     }
 
-    cout << "Comment: " << comment << endl;
-    cout << "Line: " << lineWithoutComment << endl;
-
     string substring;
     bool assignment = false;
     for (i; i < lineWithoutComment.length(); i++) {
@@ -98,7 +95,7 @@ CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syn
             return CheckingResult(true);
         }
         if (trimmedId == "dy") {
-            check = syntaxAnalyzer.isFirstDerivativeX(restString, i + 1);
+            check = syntaxAnalyzer.isFirstDerivativeY(restString, i + 1);
             if (!check.isSuccessful()) return check;
 
             syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, DERIVATIVE);
@@ -107,7 +104,7 @@ CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syn
             return CheckingResult(true);
         }
         if (trimmedId == "dz") {
-            check = syntaxAnalyzer.isFirstDerivativeX(restString, i + 1);
+            check = syntaxAnalyzer.isFirstDerivativeZ(restString, i + 1);
             if (!check.isSuccessful()) return check;
 
             syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, DERIVATIVE);
@@ -119,32 +116,21 @@ CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syn
         check = syntaxAnalyzer.isIdentifier(trimmedId, firstNonWhitespaceIdx);
         if (!check.isSuccessful()) return check;
 
-        lineWithoutComment = lineWithoutComment.substr(i + 1, lineWithoutComment.length() - (i + 1));
-
-        /*if (isExpression(lineWithoutComment, i + 1).isSuccessful()) {
-            if (!isExistingVariable(substring, 0, DOUBLE).isSuccessful()) {
-                identifiers.insert(pair<string, Type>(substring, DOUBLE));
-                lineWithoutComment = "double " + substring + " = " + lineWithoutComment + comment;
-            } else {
-                lineWithoutComment = substring + " = " + lineWithoutComment + comment;
-            }
-            mainLines.push_back(lineWithoutComment);
-            return CheckingResult(true);
+        if (syntaxAnalyzer.isExpression(restString, i + 1).isSuccessful()) {
+            string outputString =
+                    "double " + trimmedId + " = " + translatePows(restString, syntaxAnalyzer) + "; " + comment;
+            syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, DOUBLE);
+            mainLines.push_back(outputString);
+        } else if (true || syntaxAnalyzer.isMethodReturningType(restString, i + 1, TABLE).isSuccessful()) {
+            // TODO: Check and  translate eulers, rungekutta and so on
+            string outputString = "auto " + trimmedId + " = " + restString + "; " + comment;
+            syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, TABLE);
+            mainLines.push_back(outputString);
         } else {
-            if (lineWithoutComment.find("eulers") != std::string::npos) {
-                if (lineWithoutComment.find("dx") != std::string::npos) {
-                    if (!isExistingVariable(substring, 0, TABLE).isSuccessful()) {
-                        identifiers.insert(pair<string, Type>(substring, TABLE));
-                        lineWithoutComment = "double " + substring + " = " + lineWithoutComment + comment;
-                    } else {
-                        lineWithoutComment = substring + " = " + lineWithoutComment + comment;
-                    }
-                }
-            }
+            return CheckingResult(false, i + 1, "Invalid right hand side expression");
         }
-    } else {
+    } else {// This must be method call without assignment
 
-    }*/
-        return CheckingResult();
     }
+    return CheckingResult();
 }
