@@ -97,6 +97,24 @@ CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syn
             initLines.push_back(outputString);
             return CheckingResult(true);
         }
+        if (trimmedId == "dy") {
+            check = syntaxAnalyzer.isFirstDerivativeX(restString, i + 1);
+            if (!check.isSuccessful()) return check;
+
+            syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, DERIVATIVE);
+            string outputString = "#define " + trimmedId + " (" + restString + ") " + comment;
+            initLines.push_back(outputString);
+            return CheckingResult(true);
+        }
+        if (trimmedId == "dz") {
+            check = syntaxAnalyzer.isFirstDerivativeX(restString, i + 1);
+            if (!check.isSuccessful()) return check;
+
+            syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, DERIVATIVE);
+            string outputString = "#define " + trimmedId + " (" + restString + ") " + comment;
+            initLines.push_back(outputString);
+            return CheckingResult(true);
+        }
 
         check = syntaxAnalyzer.isIdentifier(trimmedId, firstNonWhitespaceIdx);
         if (!check.isSuccessful()) return check;
