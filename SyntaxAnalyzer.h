@@ -32,7 +32,7 @@ private:
 
     const list<string> RESERVED_IDENTIFIERS = { "dx", "dy", "dz", "x", "y", "z", "x0", "y0", "z0", "t", "t0", "T" };
     const list<string> MATH_FUNCTIONS = { "sin", "cos", "tan", "asin", "acos", "atan", "log", "log10", "sqrt", "cbrt" };
-    const list<string> METHODS = { "eulers", "rungekutta", "print", "println" };
+    const list<string> METHOD_NAMES = { "eulers", "rungekutta", "print", "println" };
     const list<string> MATH_OPERATIONS = { "+", "-", "*", "/", "^" };
     const list<string> MATH_CONSTS = { "e" };
 
@@ -46,7 +46,7 @@ public:
 
     SyntaxAnalyzer();
 
-    VariablesContainer &getIdentifiers() const;
+    VariablesContainer &getIdentifiers();
 
     void setIdentifiers(const VariablesContainer &identifiers);
 
@@ -66,6 +66,10 @@ public:
 
     CheckingResult isMethodName(const string &text, int startingPosition);
 
+    CheckingResult isMethodReturningType(const string &text, int startingPosition, Type returnType);
+
+    CheckingResult isMethodCall(const string &text, int startingPosition, const Method &method);
+
     CheckingResult isMathOperation(const string &text, int startingPosition);
 
     CheckingResult isMathConst(const string &text, int startingPosition);
@@ -74,11 +78,24 @@ public:
 
     CheckingResult isExpression(const string &text, int startingPosition);
 
+    CheckingResult isStringExpression(const string &text, int startingPosition);
+
     CheckingResult isFirstDerivativeX(const string &text, int startingPosition);
 
     CheckingResult isFirstDerivativeY(const string &text, int startingPosition);
 
     CheckingResult isFirstDerivativeZ(const string &text, int startingPosition);
+
+    CheckingResult isNumIntegrationCall(const string &text, int startingPosition);
+
+    /*
+     * TODO: Support overrided methods
+     * Recognize method by name in the specified code line @text
+     * Recognizing of overrided methods is not supported!
+     *
+     * Returns NULL if method is not recognized
+     */
+    Method recognizeMethod(const string &text);
 
 };
 

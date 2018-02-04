@@ -149,8 +149,53 @@ CheckingResult SyntaxAnalyzer::isMathFunction(const string &text, int startingPo
 }
 
 CheckingResult SyntaxAnalyzer::isMethodName(const string &text, int startingPosition) {
-    if (find(METHODS.begin(), METHODS.end(), text) != METHODS.end()) return CheckingResult(true);
+    if (find(METHOD_NAMES.begin(), METHOD_NAMES.end(), text) != METHOD_NAMES.end()) return CheckingResult(true);
     return CheckingResult(false, startingPosition, "There is no such method");
+}
+
+
+CheckingResult SyntaxAnalyzer::isMethodReturningType(const string &text, int startingPosition, Type returnType) {
+    for (const auto &method : methods) {
+        if (method.name == text && method.returnType == returnType) return CheckingResult(true);
+    }
+    return CheckingResult(false, startingPosition, "There is no such method with specified return type");
+}
+
+/*
+ * START - 'METHOD_NAME' -> A - '(' -> B - 'ARGS' -> C - ')' -> D - 'WS' -> D(r)
+ *       |                    |                                   |
+ *       - 'WS' -> START(r)   - 'WS' -> A(r)                      - '$' -> FINAL
+ */
+CheckingResult SyntaxAnalyzer::isMethodCall(const string &text, int startingPosition, const SyntaxAnalyzer::Method &method) {
+    State state = START;
+    for (int i = 0; i < text.length(); i++) {
+        switch (state) {
+            case START:
+                if (text.at(i) == ' ') continue;
+                int position = i;
+                string substring;
+                while (i < text.length()) {
+                    if (text.at(i) == ' ' || text.at(i) == '(') break;
+                    substring += string(1, text.at(i));
+                    i++;
+                }
+                if (i >= text.length() || substring != method.name) return CheckingResult(false, position, "Invalid method name");
+                if (text.at(i) == ' ') state = A;
+                else state = B;
+                break;
+            case A:
+                if (text.at(i) == ' ') continue;
+                if (text.at(i) == '(') state = B;
+                else return CheckingResult(false, position, "Unexpected symbol in method call");
+                break;
+            case B:
+                int closingBracketIndex = StringUtils::indexOf(text)
+                string argsString =
+                else return CheckingResult(false, position, "Unexpected symbol in method call");
+                break;
+        }
+    }
+    return CheckingResult();
 }
 
 CheckingResult SyntaxAnalyzer::isMathOperation(const string &text, int startingPosition) {
@@ -365,12 +410,101 @@ CheckingResult SyntaxAnalyzer::isFirstDerivativeZ(const string &text, int starti
     return result;
 }
 
-VariablesContainer &SyntaxAnalyzer::getIdentifiers() const {
+/*
+ * START - 'eulers rungekutta' -> A - 'WS' -> A(r)
+ *       |                          |
+ *       - 'WS' -> START(r)         - '(' -> B - 'dx dy dz' -> C - ',' -> D - 'EXPR' -> E - ')' -> F - 'WS' -> F(r)
+ *                                             |                 |                                   |
+ *                                             - 'WS' -> B(r)    - 'WS' -> C(r)                      - '$' -> FINAL
+ */
+CheckingResult SyntaxAnalyzer::isNumIntegrationCall(const string &text, int startingPosition) {
+    State state = START;
+    for (unsigned int i = 0; i < text.length(); i++) {
+        switch (state) {
+            case START:
+                if (text.at(i) == ' ') continue;
+                string substring;
+                int position = i;
+                while (i < text.length()) {
+                    if (text.at(i) == ' ') {
+                        if (isMethodReturningType(substring, startingPosition + position, TABLE).isSuccessful()) {
+                            state = A;
+                            continue;
+                        } else {
+                            return CheckingResult(false, startingPosition + position, "There is no such numeric integration method");
+                        }
+                    }
+                    if (i >= text.length()) return CheckingResult(false, startingPosition, "");
+                    i++;
+                }
+                break;
+        }
+    }
+    return CheckingResult();
+}
+
+SyntaxAnalyzer::Method SyntaxAnalyzer::recognizeMethod(const string &text) {
+    int index = StringUtils::indexOf(text, "(");
+    if (index == -1) return NULL;
+    string substring = text.substr(0, index);
+    StringUtils::trim(substring);
+    for (const auto &method : methods) {
+        if (method.name == substring) return method;
+    }
+    return NULL;
+}
+
+VariablesContainer &SyntaxAnalyzer::getIdentifiers() {
     return identifiers;
 }
 
 void SyntaxAnalyzer::setIdentifiers(const VariablesContainer &identifiers) {
     SyntaxAnalyzer::identifiers = identifiers;
+}
+
+/*
+ * START - 'WS' -> START(r)
+ *       |
+ *       - 'STR_ID' -> A - 'WS' -> A(r)
+ *       |               |
+ *       - '"' -> B      - '+' -> C - 'WS' -> C(r)
+ *       |               |          |
+ *       - '$' -> FINAL  |          - 'STR_ID' -> A
+ *                       |          |
+ *                       |          - '"' -> B - '"' -> A
+ *                       |                     |
+ *                       - '$' -> FINAL        - 'ANY OTHER' -> B(r)
+ */
+CheckingResult SyntaxAnalyzer::isStringExpression(const string &text, int startingPosition) {
+    State state = START;
+    for (unsigned int i = 0; i < text.length(); i++) {
+        switch (state) {
+            case START:
+                if (text.at(i) == ' ') continue;
+                if (text.at(i) == '"') state = B;
+                else {
+                    string substring;
+                    int position = i;
+                    for (i; i < text.length(); i++) {
+                        if (text.at(i) == ' ' || text.at(i) == '+') break;
+                        substring += string(1, text.at(i));
+                    }
+                    if (isExistingVariable(substring, startingPosition + position, STRING).isSuccessful()) state = A;
+                    else return CheckingResult(false, startingPosition + position, "String variable with such name doesn't exist");
+                }
+                break;
+            case A:
+                if (text.at(i) == ' ') continue;
+                if (text.at(i) == '+') state = C;
+                else return CheckingResult(false, startingPosition + i, "Unexpected symbol in string expression");
+                break;
+            case B:
+                if (text.at(i) == '"' || text.at(i - 1) != '\\') state = A;
+                else return CheckingResult(false, startingPosition + i, "Unexpected symbol in string expression");
+                break;
+        }
+    }
+    return CheckingResult();
 }
 
 SyntaxAnalyzer::Method::Method() = default;
