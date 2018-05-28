@@ -88,13 +88,6 @@ public:
 
     CheckingResult isNumIntegrationCall(const string &text, int startingPosition);
 
-    /*
-     * TODO: Support overrided methods
-     * Recognize method by name in the specified code line @text
-     * Recognizing of overrided methods is not supported!
-     *
-     * Returns NULL if method is not recognized
-     */
     Method recognizeMethod(const string &text);
 
 };

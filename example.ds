@@ -2,7 +2,6 @@
 #  This is an example program written in dynamic systems dsl
 #  ...
 
-# TODO: Need to support ranges for t0 and T values
 
 x0 = 5 # x(0) = 5
 y0 = 2

@@ -12,7 +12,6 @@ void Translator::translateToCpp(const string &sourceFileName) {
     if (file.is_open()) {
         std::string line;
         while (std::getline(file, line)) {
-            //cout << line << endl;
             translateLine(line, *syntaxAnalyzer);
         }
         file.close();
@@ -122,15 +121,11 @@ CheckingResult Translator::translateLine(const string &line, SyntaxAnalyzer &syn
             syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, DOUBLE);
             mainLines.push_back(outputString);
         } else if (true || syntaxAnalyzer.isMethodReturningType(restString, i + 1, TABLE).isSuccessful()) {
-            // TODO: Check and  translate eulers, rungekutta and so on
             string outputString = "auto " + trimmedId + " = " + restString + "; " + comment;
             syntaxAnalyzer.getIdentifiers().addIdentifier(trimmedId, TABLE);
             mainLines.push_back(outputString);
-        } else {
-            return CheckingResult(false, i + 1, "Invalid right hand side expression");
         }
-    } else {// This must be method call without assignment
-
+        return CheckingResult(false, i + 1, "Invalid right hand side expression");
     }
     return CheckingResult();
 }

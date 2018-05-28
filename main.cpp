@@ -10,17 +10,6 @@
 using namespace std;
 
 int main() {
-    CheckingResult res;
-    auto *syntaxAnalyzer = new SyntaxAnalyzer();
-    res = syntaxAnalyzer->isMethodReturningType("rungekutta", 0, TABLE);
-    if (res.isSuccessful()) cout << "yes" << endl;
-    else cout << "no " << res.getMessage() << " at " << res.getPosition() << endl;
-
-    Translator().translateToCpp("../example.ds");
-
-    string str = "   waaat ";
-    cout << str << endl;
-    StringUtils::trim(str);
-    cout << str << endl;
+    Translator().translateToCpp("../source.ds");
     return 0;
 }
